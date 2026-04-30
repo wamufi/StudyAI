@@ -1,7 +1,9 @@
 package com.wamufi.studyai
 
 import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
 import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
@@ -13,12 +15,10 @@ data class TextRequest(val text: String)
 @Serializable
 data class SummaryResponse(val summary: String)
 
-//object HttpClientProvider {
-    val client = HttpClient(OkHttp) {
-        install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-            })
-        }
+val client = HttpClient(OkHttp) {
+    install(ContentNegotiation) {
+        json(Json {
+            ignoreUnknownKeys = true
+        })
     }
-//}
+}
