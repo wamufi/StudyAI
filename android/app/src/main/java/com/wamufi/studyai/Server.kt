@@ -1,9 +1,9 @@
 package com.wamufi.studyai
 
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.HttpTimeoutConfig
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
@@ -13,6 +13,9 @@ import kotlinx.serialization.json.Json
 data class TextRequest(val text: String)
 
 @Serializable
+data class TextResponse(val text: String)
+
+@Serializable
 data class SummaryResponse(val summary: String)
 
 val client = HttpClient(OkHttp) {
@@ -20,5 +23,9 @@ val client = HttpClient(OkHttp) {
         json(Json {
             ignoreUnknownKeys = true
         })
+    }
+    install(HttpTimeout) {
+        requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+        socketTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
     }
 }

@@ -2,7 +2,9 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from langchain_community.vectorstores import Chroma
 from rag_chatbot.ingest import PDFEmbedding
+from pydantic import BaseModel
 from openai import OpenAI
+import asyncio
 
 class RagService:
 
@@ -11,7 +13,7 @@ class RagService:
         self.db = Chroma(persist_directory="./chroma", embedding_function=self.embedding)
         self.llm = OpenAI(base_url="http://127.0.0.1:1234/v1", api_key='lm-studio')
 
-    def retrieve(self, query: str, k: int = 4):
+    def retrieve(self, query: str, k: int = 3):
         docs = self.db.similarity_search(query, k=k)
         return docs
     
@@ -46,14 +48,33 @@ class RagService:
                 yield chunk.choices[0].delta.content
 
 
+class TextRequest(BaseModel):
+    text: str
+
+
 # app.py
 app = FastAPI()
 rag = RagService()
 
-@app.get("/rag")
-def ask(q: str):
-    docs = rag.retrieve(q)
-    prompt = rag.build_prompt(q, docs)
+@app.post("/rag")
+def ask(q: TextRequest):
+
+    async def generate():
+        yield " "
+
+        task = asyncio.create_task(asyncio.to_thread(rag.retrieve, q.text))
+
+        while not task.done():
+            yield "...\n"
+            await asyncio.sleep(0.3)
+
+        docs = await task
+
+        prompt = rag.build_prompt(q.text, docs)
+
+        for token in rag.stream_answer(prompt):
+            yield token
 
     # 3. 스트리밍 응답
-    return StreamingResponse(rag.stream_answer(prompt=prompt), media_type="text/plain")
+    # return StreamingResponse(rag.stream_answer(prompt=prompt), media_type="text/plain")
+    return StreamingResponse(generate(), media_type="text/event-stream")
